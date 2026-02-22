@@ -247,9 +247,7 @@ export default function HomePage() {
 
         <section className="mx-auto max-w-5xl text-center">
           <h1 className="text-4xl font-bold leading-tight tracking-tight text-[var(--brand-ink)] sm:text-6xl lg:text-7xl">
-            Revenue <span className="text-[var(--brand-orange)]">Performance</span>
-            <br />
-            Against Goal
+            the <span className="text-[var(--brand-orange)]">$10M Goal</span>
           </h1>
 
           <p className="mx-auto mt-6 max-w-4xl text-lg font-light leading-snug text-[var(--brand-muted)] sm:mt-8 sm:text-[2rem]">
