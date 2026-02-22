@@ -147,7 +147,7 @@ export default function HomePage() {
           </h1>
 
           <p className="mx-auto mt-8 max-w-4xl text-2xl font-light leading-snug text-[var(--brand-muted)] sm:text-[2rem]">
-            Closed Won pipeline progress in the last 180 days with live HubSpot deal data and clear goal tracking.
+            Deals closed for this year- let's get it
           </p>
         </section>
 
