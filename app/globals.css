@@ -1,0 +1,45 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: only light;
+  --brand-orange: #e4583a;
+  --brand-ink: #0f1115;
+  --brand-muted: #6f7278;
+  --brand-line: #d8d8d8;
+  --brand-canvas: #ececec;
+  --brand-panel: #ffffff;
+}
+
+body {
+  @apply text-ink antialiased;
+  font-feature-settings: "tnum" 1, "lnum" 1;
+  background: #ffffff;
+}
+
+@keyframes ticker-scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes money-fall {
+  0% {
+    transform: translateY(-8%);
+  }
+  100% {
+    transform: translateY(8%);
+  }
+}
+
+.ticker-track {
+  animation: ticker-scroll 26s linear infinite;
+}
+
+.money-column {
+  animation: money-fall 3.5s ease-in-out infinite alternate;
+}
