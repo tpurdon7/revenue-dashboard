@@ -98,6 +98,7 @@ export default function HomePage() {
   }, [data]);
 
   const progressPct = Math.round((data?.progress ?? 0) * 100);
+  const goalAmount = data?.goal ?? 10_000_000;
   const tickerDeals =
     data?.deals.slice(0, 40).map((deal) => `${deal.dealname || 'Untitled Deal'} ${formatCurrency(deal.amount)}`) ??
     [];
@@ -105,6 +106,17 @@ export default function HomePage() {
     tickerDeals.length > 0
       ? tickerDeals
       : ['Loading deals...', 'Loading deals...', 'Loading deals...', 'Loading deals...'];
+  const millionLevels = useMemo(() => {
+    const levels: number[] = [];
+    for (let value = 1_000_000; value <= goalAmount; value += 1_000_000) {
+      levels.push(value);
+    }
+    const lastLevel = levels[levels.length - 1];
+    if (lastLevel !== goalAmount) {
+      levels.push(goalAmount);
+    }
+    return levels;
+  }, [goalAmount]);
   const confettiPieces = useMemo(
     () =>
       Array.from({ length: 460 }, (_, i) => ({
@@ -255,22 +267,25 @@ export default function HomePage() {
           </p>
         </section>
 
-        <section className="mt-10 grid gap-5 sm:mt-14 sm:gap-6 lg:grid-cols-3">
-          <article className="rounded-3xl border border-[var(--brand-line)] bg-[var(--brand-panel)] p-5 shadow-[0_16px_40px_rgba(15,17,21,0.06)] sm:p-8 lg:col-span-2">
-            <div className="mb-5 overflow-hidden rounded-2xl border border-black bg-black py-2 text-white sm:-mx-8 sm:-mt-8 sm:mb-7 sm:rounded-t-3xl sm:rounded-b-none sm:border-x-0 sm:border-b sm:border-t-0 sm:py-3">
-              <div className="ticker-track flex min-w-max gap-6 whitespace-nowrap px-3 text-[10px] font-bold uppercase tracking-[0.06em] sm:gap-10 sm:px-4 sm:text-sm sm:tracking-[0.08em]">
-                {[...tickerItems, ...tickerItems].map((item, index) => (
-                  <span key={`ticker-${index}`} className="text-emerald-400">
-                    {item}
-                  </span>
-                ))}
-              </div>
+        <section className="mt-10 -mx-4 sm:-mx-8">
+          <div className="overflow-hidden border-y border-black bg-black py-2 text-white sm:py-3">
+            <div className="ticker-track flex min-w-max gap-6 whitespace-nowrap px-3 text-[10px] font-bold uppercase tracking-[0.06em] sm:gap-10 sm:px-8 sm:text-sm sm:tracking-[0.08em]">
+              {[...tickerItems, ...tickerItems].map((item, index) => (
+                <span key={`ticker-${index}`} className="text-emerald-400">
+                  {item}
+                </span>
+              ))}
             </div>
+          </div>
+        </section>
+
+        <section className="mt-8 grid gap-5 sm:mt-10 sm:gap-6 lg:grid-cols-4">
+          <article className="rounded-3xl border-2 border-[var(--brand-orange)] bg-gradient-to-br from-white via-[#fff7f2] to-[#ffe8df] p-6 shadow-[0_24px_60px_rgba(228,88,58,0.18)] sm:p-10 lg:col-span-3">
 
             <div className="flex flex-wrap items-start justify-between gap-3 sm:gap-4">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--brand-muted)]">Closed Revenue</p>
-                <p className="mt-2 text-3xl font-bold tracking-tight text-[var(--brand-ink)] sm:mt-3 sm:text-6xl">
+                <p className="mt-2 text-4xl font-bold tracking-tight text-[var(--brand-ink)] sm:mt-3 sm:text-7xl">
                   {loading && !data ? 'Loading...' : `${formatCompactMillions(data?.totalRevenue ?? 0)} Closed`}
                 </p>
                 <p className="mt-2 text-sm text-[var(--brand-muted)] sm:mt-3">Last 180 Days to Today</p>
@@ -280,7 +295,7 @@ export default function HomePage() {
                 type="button"
                 onClick={ringBellAndRefresh}
                 disabled={refreshing || loading}
-                className="rounded-full border border-[var(--brand-line)] bg-white px-4 py-2 text-left text-xs font-bold text-[var(--brand-ink)] transition hover:bg-[#f7f7f7] disabled:cursor-not-allowed disabled:opacity-60 sm:px-5 sm:py-2.5 sm:text-sm"
+                className="rounded-full border border-[var(--brand-orange)] bg-white/80 px-4 py-2 text-left text-xs font-bold text-[var(--brand-ink)] transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60 sm:px-5 sm:py-2.5 sm:text-sm"
               >
                 <span className="inline-flex items-center gap-2">
                   <span>{refreshing ? 'Refreshing deals...' : 'Just won a new deal? Ring the bell'}</span>
@@ -292,16 +307,43 @@ export default function HomePage() {
             </div>
 
             <div className="mt-8">
-              <div className="h-3 w-full overflow-hidden rounded-full bg-[#dedede]">
+              <div className="relative h-6 w-full overflow-hidden rounded-full border border-[#cfcfcf] bg-[#e4e4e4]">
                 <div
                   className="h-full rounded-full bg-[var(--brand-orange)] transition-all duration-500"
                   style={{ width: `${progressPct}%` }}
                   aria-label="Revenue progress"
                 />
+                {millionLevels.map((level) => (
+                  <span
+                    key={`level-tick-${level}`}
+                    className="pointer-events-none absolute inset-y-0 w-px bg-black/30"
+                    style={{
+                      left: `${Math.min((level / goalAmount) * 100, 100)}%`
+                    }}
+                  />
+                ))}
+              </div>
+
+              <div className="relative mt-2 h-5">
+                {millionLevels.map((level) => {
+                  const label = `$${Math.round(level / 1_000_000)}M`;
+                  const showOnMobile = level % 2_000_000 === 0 || level === goalAmount;
+                  return (
+                    <span
+                      key={`level-label-${level}`}
+                      className={`absolute -translate-x-1/2 text-[10px] font-bold uppercase tracking-[0.08em] text-[var(--brand-muted)] ${showOnMobile ? 'block' : 'hidden sm:block'}`}
+                      style={{
+                        left: `${Math.min((level / goalAmount) * 100, 100)}%`
+                      }}
+                    >
+                      {label}
+                    </span>
+                  );
+                })}
               </div>
 
               <p className="mt-3 text-xs text-[var(--brand-muted)] sm:text-sm">
-                {progressPct}% of {formatCompactMillions(data?.goal ?? 10_000_000)} goal
+                {progressPct}% of {formatCompactMillions(goalAmount)} goal
               </p>
 
               {data ? (
@@ -318,7 +360,7 @@ export default function HomePage() {
             ) : null}
           </article>
 
-          <article className="rounded-3xl border border-[var(--brand-line)] bg-[var(--brand-panel)] p-5 shadow-[0_16px_40px_rgba(15,17,21,0.06)] sm:p-8">
+          <article className="rounded-3xl border border-[var(--brand-line)] bg-[var(--brand-panel)] p-5 shadow-[0_16px_40px_rgba(15,17,21,0.06)] sm:p-8 lg:col-span-1">
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--brand-muted)]">Snapshot</p>
             <dl className="mt-6 space-y-5">
               <div>
