@@ -258,7 +258,7 @@ export default function HomePage() {
         <section className="mt-10 grid gap-5 sm:mt-14 sm:gap-6 lg:grid-cols-3">
           <article className="rounded-3xl border border-[var(--brand-line)] bg-[var(--brand-panel)] p-5 shadow-[0_16px_40px_rgba(15,17,21,0.06)] sm:p-8 lg:col-span-2">
             <div className="mb-5 overflow-hidden rounded-2xl border border-black bg-black py-2 text-white sm:-mx-8 sm:-mt-8 sm:mb-7 sm:rounded-t-3xl sm:rounded-b-none sm:border-x-0 sm:border-b sm:border-t-0 sm:py-3">
-              <div className="flex min-w-max gap-6 whitespace-nowrap px-3 text-[10px] font-bold uppercase tracking-[0.06em] sm:ticker-track sm:gap-10 sm:px-4 sm:text-sm sm:tracking-[0.08em]">
+              <div className="ticker-track flex min-w-max gap-6 whitespace-nowrap px-3 text-[10px] font-bold uppercase tracking-[0.06em] sm:gap-10 sm:px-4 sm:text-sm sm:tracking-[0.08em]">
                 {[...tickerItems, ...tickerItems].map((item, index) => (
                   <span key={`ticker-${index}`} className="text-emerald-400">
                     {item}
