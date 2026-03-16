@@ -7,6 +7,7 @@ type Deal = {
   dealname: string;
   amount: number;
   closedate: string | null;
+  ownerName: string;
 };
 
 type RevenueResponse = {
@@ -15,6 +16,14 @@ type RevenueResponse = {
   deals: Deal[];
   startDateUsed: string;
   endDateUsed: string;
+  openDealValue: number;
+  openDealsCount: number;
+  openProgress: number;
+  stages: {
+    label: string;
+    totalValue: number;
+    dealsCount: number;
+  }[];
   goal: number;
   progress: number;
 };
@@ -46,6 +55,22 @@ function formatDate(isoDate: string | null): string {
     day: 'numeric',
     year: 'numeric'
   }).format(date);
+}
+
+function getCloserBadge(amount: number): string | null {
+  if (amount >= 1_000_000) {
+    return '🐋';
+  }
+  if (amount >= 250_000) {
+    return '🦁';
+  }
+  if (amount > 100_000) {
+    return '🦈';
+  }
+  if (amount < 50_000) {
+    return '🐔';
+  }
+  return null;
 }
 
 export default function HomePage() {
@@ -98,7 +123,14 @@ export default function HomePage() {
   }, [data]);
 
   const progressPct = Math.round((data?.progress ?? 0) * 100);
+  const openProgressPct = Math.round((data?.openProgress ?? 0) * 100);
   const goalAmount = data?.goal ?? 10_000_000;
+  const proposalStage = data?.stages.find((stage) => stage.label === 'Proposal');
+  const corporateSignOffStage = data?.stages.find((stage) => stage.label === 'Corporate Sign Off');
+  const proposalValue = proposalStage?.totalValue ?? 0;
+  const corporateSignOffValue = corporateSignOffStage?.totalValue ?? 0;
+  const proposalPct = goalAmount > 0 ? Math.min((proposalValue / goalAmount) * 100, 100) : 0;
+  const corporateSignOffPct = goalAmount > 0 ? Math.min((corporateSignOffValue / goalAmount) * 100, 100) : 0;
   const tickerDeals =
     data?.deals.slice(0, 40).map((deal) => `${deal.dealname || 'Untitled Deal'} ${formatCurrency(deal.amount)}`) ??
     [];
@@ -346,6 +378,58 @@ export default function HomePage() {
                 {progressPct}% of {formatCompactMillions(goalAmount)} goal
               </p>
 
+              <div className="mt-6">
+                <div className="flex flex-wrap items-end justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--brand-muted)]">
+                      Open Deals Current Value
+                    </p>
+                    <p className="mt-1 text-lg font-bold tracking-tight text-[var(--brand-ink)] sm:text-2xl">
+                      {loading && !data ? 'Loading...' : formatCompactMillions(data?.openDealValue ?? 0)}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-4 text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--brand-muted)] sm:text-xs">
+                    <span className="inline-flex items-center gap-2">
+                      <span className="h-2.5 w-2.5 rounded-full bg-sky-500" aria-hidden="true" />
+                      Proposal {formatCompactMillions(proposalValue)}
+                    </span>
+                    <span className="inline-flex items-center gap-2">
+                      <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" aria-hidden="true" />
+                      Corporate Sign Off {formatCompactMillions(corporateSignOffValue)}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="mt-3 relative h-5 w-full overflow-hidden rounded-full border border-[#cfcfcf] bg-[#e4e4e4]">
+                  <div
+                    className="absolute inset-y-0 left-0 bg-sky-500 transition-all duration-500"
+                    style={{ width: `${proposalPct}%` }}
+                    aria-label="Proposal open deal value"
+                  />
+                  <div
+                    className="absolute inset-y-0 bg-emerald-500 transition-all duration-500"
+                    style={{ left: `${proposalPct}%`, width: `${corporateSignOffPct}%` }}
+                    aria-label="Corporate sign off open deal value"
+                  />
+                  {millionLevels.map((level) => (
+                    <span
+                      key={`open-level-tick-${level}`}
+                      className="pointer-events-none absolute inset-y-0 w-px bg-black/30"
+                      style={{
+                        left: `${Math.min((level / goalAmount) * 100, 100)}%`
+                      }}
+                    />
+                  ))}
+                </div>
+
+                <p className="mt-3 text-xs text-[var(--brand-muted)] sm:text-sm">
+                  {openProgressPct}% of {formatCompactMillions(goalAmount)} goal in current pipeline
+                </p>
+                <p className="mt-1 text-xs text-[var(--brand-muted)] sm:text-sm">
+                  {data?.openDealsCount ?? 0} open deals in proposal or corporate sign off from the last 180 days
+                </p>
+              </div>
+
               {data ? (
                 <p className="mt-1 text-xs text-[var(--brand-muted)] sm:text-sm">
                   {data.dealsCount} deals closed | Date window used: {formatDate(data.startDateUsed)} to {formatDate(data.endDateUsed)}
@@ -405,25 +489,33 @@ export default function HomePage() {
                       </td>
                     </tr>
                   ) : (
-                    recentDeals.map((deal) => (
-                      <tr key={deal.id} className="border-b border-[#efefef] text-xs last:border-b-0 sm:text-sm">
-                        <td className="max-w-[130px] truncate px-1 py-3 text-[var(--brand-ink)] sm:max-w-none sm:px-2 sm:py-3.5">
-                          {deal.dealname || 'Untitled Deal'}
-                        </td>
-                        <td className="whitespace-nowrap px-1 py-3 text-[var(--brand-muted)] sm:px-2 sm:py-3.5">
-                          {formatDate(deal.closedate)}
-                        </td>
-                        <td className="whitespace-nowrap px-1 py-3 text-right font-medium text-[var(--brand-ink)] sm:px-2 sm:py-3.5">
-                          {formatCurrency(deal.amount)}
-                        </td>
-                      </tr>
-                    ))
+                    recentDeals.map((deal) => {
+                      const closerBadge = getCloserBadge(deal.amount);
+                      return (
+                        <tr key={deal.id} className="border-b border-[#efefef] text-xs last:border-b-0 sm:text-sm">
+                          <td className="max-w-[160px] px-1 py-3 text-[var(--brand-ink)] sm:max-w-none sm:px-2 sm:py-3.5">
+                            <p className="truncate">{deal.dealname || 'Untitled Deal'}</p>
+                            <p className="mt-1 text-[11px] font-bold text-[var(--brand-ink)] sm:text-xs">
+                              {closerBadge ? `${closerBadge} ` : ''}
+                              {deal.ownerName || 'Unassigned'}
+                            </p>
+                          </td>
+                          <td className="whitespace-nowrap px-1 py-3 text-[var(--brand-muted)] sm:px-2 sm:py-3.5">
+                            {formatDate(deal.closedate)}
+                          </td>
+                          <td className="whitespace-nowrap px-1 py-3 text-right font-medium text-[var(--brand-ink)] sm:px-2 sm:py-3.5">
+                            {formatCurrency(deal.amount)}
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
             </div>
           )}
         </section>
+
       </div>
     </main>
   );

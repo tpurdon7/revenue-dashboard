@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { fetchClosedWonRevenue } from '@/lib/hubspot';
+import { fetchClosedWonRevenue, fetchOpenDealsCurrentValue } from '@/lib/hubspot';
 
 export const runtime = 'nodejs';
 
@@ -28,14 +28,20 @@ export async function GET(request: NextRequest) {
     const startDate = request.nextUrl.searchParams.get('startDate') ?? undefined;
     const endDate = request.nextUrl.searchParams.get('endDate') ?? undefined;
 
-    const data = await fetchClosedWonRevenue({ startDate, endDate });
+    const [closedWonData, openDealsData] = await Promise.all([
+      fetchClosedWonRevenue({ startDate, endDate }),
+      fetchOpenDealsCurrentValue({ startDate, endDate })
+    ]);
     const goal = parseGoal(process.env.REVENUE_GOAL);
-    const progress = clampProgress(data.totalRevenue / goal);
+    const progress = clampProgress(closedWonData.totalRevenue / goal);
+    const openProgress = clampProgress(openDealsData.openDealValue / goal);
 
     return NextResponse.json({
-      ...data,
+      ...closedWonData,
+      ...openDealsData,
       goal,
-      progress
+      progress,
+      openProgress
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown server error';
