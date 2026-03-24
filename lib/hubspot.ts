@@ -4,9 +4,29 @@ const HUBSPOT_SEARCH_URL = 'https://api.hubapi.com/crm/v3/objects/deals/search';
 const HUBSPOT_OWNERS_URL = 'https://api.hubapi.com/crm/v3/owners';
 const HUBSPOT_DEAL_PIPELINES_URL = 'https://api.hubapi.com/crm/v3/pipelines/deals';
 const ROLLING_WINDOW_DAYS = 180;
-const REQUIRED_PROPERTIES = ['amount', 'closedate', 'dealname', 'hubspot_owner_id'] as const;
-const OPEN_DEAL_REQUIRED_PROPERTIES = ['amount', 'dealstage', 'dealname', 'createdate'] as const;
+const REQUIRED_PROPERTIES = [
+  'amount',
+  'closedate',
+  'dealname',
+  'hubspot_owner_id',
+  'country',
+  'region',
+  'hs_country_region',
+  'hs_lastmodifieddate'
+] as const;
+const OPEN_DEAL_REQUIRED_PROPERTIES = [
+  'amount',
+  'dealstage',
+  'dealname',
+  'createdate',
+  'hubspot_owner_id',
+  'country',
+  'region',
+  'hs_country_region',
+  'hs_lastmodifieddate'
+] as const;
 const EXCLUDED_OWNER_NAME = 'bashar aboudaoud';
+const INNOVATION_SERVICES_PIPELINE_LABEL = 'innovation services';
 const PROPOSAL_STAGE_LABEL = 'proposal';
 const CORPORATE_SIGN_OFF_STAGE_LABEL = 'corporate sign off';
 const HUBSPOT_SEARCH_RETRY_DELAYS_MS = [350, 800, 1600];
@@ -64,6 +84,9 @@ export type Deal = {
   dealname: string;
   amount: number;
   closedate: string | null;
+  country: string;
+  region: string;
+  lastUpdatedDate: string | null;
   hubspot_owner_id: string;
   ownerName: string;
 };
@@ -90,9 +113,21 @@ export type OpenDealStageSummary = {
 export type FetchOpenDealsValueResult = {
   openDealValue: number;
   openDealsCount: number;
+  pipelineDeals: PipelineDeal[];
   stages: OpenDealStageSummary[];
   startDateUsed: string;
   endDateUsed: string;
+};
+
+export type PipelineDeal = {
+  id: string;
+  dealname: string;
+  amount: number;
+  region: string;
+  country: string;
+  ownerName: string;
+  lastUpdatedDate: string | null;
+  status: 'Proposal' | 'Corporate Sign Off';
 };
 
 function toIsoFromMs(value: number): string {
@@ -147,9 +182,26 @@ function mapDeal(deal: HubSpotDeal): Deal {
     dealname: deal.properties.dealname ?? 'Untitled Deal',
     amount: sanitizeAmount(deal.properties.amount),
     closedate: deal.properties.closedate ?? null,
+    country: pickProperty(deal.properties, ['country']) ?? '',
+    region: pickProperty(deal.properties, ['region', 'hs_country_region']) ?? '',
+    lastUpdatedDate: deal.properties.hs_lastmodifieddate ?? null,
     hubspot_owner_id: deal.properties.hubspot_owner_id ?? '',
     ownerName: 'Unassigned'
   };
+}
+
+function pickProperty(
+  properties: Partial<Record<string, string | null>>,
+  keys: readonly string[]
+): string | null {
+  for (const key of keys) {
+    const value = properties[key];
+    if (value && value.trim().length > 0) {
+      return value.trim();
+    }
+  }
+
+  return null;
 }
 
 function getStartAndEndTimestamps(startDate?: string, endDate?: string) {
@@ -185,6 +237,32 @@ function sortDealsByCloseDateDesc(deals: Deal[]): Deal[] {
 
 function normalizeText(value: string | undefined): string {
   return (value ?? '').trim().toLowerCase();
+}
+
+function sortDealsByLastUpdatedDesc<T extends { lastUpdatedDate: string | null }>(deals: T[]): T[] {
+  return [...deals].sort((a, b) => {
+    const aTime = a.lastUpdatedDate ? new Date(a.lastUpdatedDate).getTime() : 0;
+    const bTime = b.lastUpdatedDate ? new Date(b.lastUpdatedDate).getTime() : 0;
+    return bTime - aTime;
+  });
+}
+
+function sortPipelineDeals(deals: PipelineDeal[]): PipelineDeal[] {
+  const statusOrder: Record<PipelineDeal['status'], number> = {
+    'Corporate Sign Off': 0,
+    Proposal: 1
+  };
+
+  return [...deals].sort((a, b) => {
+    const statusDelta = statusOrder[a.status] - statusOrder[b.status];
+    if (statusDelta !== 0) {
+      return statusDelta;
+    }
+
+    const aTime = a.lastUpdatedDate ? new Date(a.lastUpdatedDate).getTime() : 0;
+    const bTime = b.lastUpdatedDate ? new Date(b.lastUpdatedDate).getTime() : 0;
+    return bTime - aTime;
+  });
 }
 
 function isExcludedOwner(owner: HubSpotOwner): boolean {
@@ -254,13 +332,20 @@ async function fetchDealPipelines(token: string): Promise<HubSpotDealPipeline[]>
   return payload.results ?? [];
 }
 
-function getStageIdsByLabel(pipelines: HubSpotDealPipeline[], label: string): string[] {
+function getStageIdsByLabel(
+  pipelines: HubSpotDealPipeline[],
+  label: string,
+  pipelineLabel?: string
+): string[] {
   const normalizedLabel = normalizeText(label);
+  const normalizedPipelineLabel = normalizeText(pipelineLabel);
 
   return pipelines.flatMap((pipeline) =>
-    (pipeline.stages ?? [])
+    normalizeText(pipeline.label) === normalizedPipelineLabel || normalizedPipelineLabel.length === 0
+      ? (pipeline.stages ?? [])
       .filter((stage) => normalizeText(stage.label) === normalizedLabel)
       .map((stage) => stage.id)
+      : []
   );
 }
 
@@ -323,6 +408,21 @@ async function fetchDealsInStageSince({
   }
 
   return deals;
+}
+
+function mapPipelineDeal(deal: HubSpotDeal, status: PipelineDeal['status'], ownerNamesById: Map<string, string>): PipelineDeal {
+  const ownerId = deal.properties.hubspot_owner_id ?? '';
+
+  return {
+    id: deal.id,
+    dealname: deal.properties.dealname ?? 'Untitled Deal',
+    amount: sanitizeAmount(deal.properties.amount),
+    region: pickProperty(deal.properties, ['region', 'hs_country_region']) ?? '',
+    country: pickProperty(deal.properties, ['country']) ?? '',
+    ownerName: ownerNamesById.get(ownerId) ?? 'Unassigned',
+    lastUpdatedDate: deal.properties.hs_lastmodifieddate ?? null,
+    status
+  };
 }
 
 export async function fetchClosedWonRevenue({
@@ -443,8 +543,17 @@ export async function fetchOpenDealsCurrentValue({
 
   const { startMs, endMs, startDateUsed, endDateUsed } = getStartAndEndTimestamps(startDate, endDate);
   const pipelines = await fetchDealPipelines(token);
-  const proposalStageIds = getStageIdsByLabel(pipelines, PROPOSAL_STAGE_LABEL);
-  const corporateSignOffStageIds = getStageIdsByLabel(pipelines, CORPORATE_SIGN_OFF_STAGE_LABEL);
+  const proposalStageIds = getStageIdsByLabel(
+    pipelines,
+    PROPOSAL_STAGE_LABEL,
+    INNOVATION_SERVICES_PIPELINE_LABEL
+  );
+  const corporateSignOffStageIds = getStageIdsByLabel(
+    pipelines,
+    CORPORATE_SIGN_OFF_STAGE_LABEL,
+    INNOVATION_SERVICES_PIPELINE_LABEL
+  );
+  const { ownerNamesById } = await fetchOwnersDirectory(token);
 
   const proposalDeals: HubSpotDeal[] = [];
   for (const stageId of proposalStageIds) {
@@ -458,8 +567,13 @@ export async function fetchOpenDealsCurrentValue({
 
   const proposalValue = proposalDeals.reduce((sum, deal) => sum + sanitizeAmount(deal.properties.amount), 0);
   const corporateSignOffValue = corporateDeals.reduce((sum, deal) => sum + sanitizeAmount(deal.properties.amount), 0);
+  const pipelineDeals = sortPipelineDeals([
+    ...proposalDeals.map((deal) => mapPipelineDeal(deal, 'Proposal', ownerNamesById)),
+    ...corporateDeals.map((deal) => mapPipelineDeal(deal, 'Corporate Sign Off', ownerNamesById))
+  ]);
 
   console.info('[hubspot] open deals current value summary', {
+    pipelineLabel: INNOVATION_SERVICES_PIPELINE_LABEL,
     proposalStageIds,
     corporateSignOffStageIds,
     proposalDealsCount: proposalDeals.length,
@@ -473,6 +587,7 @@ export async function fetchOpenDealsCurrentValue({
   return {
     openDealValue: proposalValue + corporateSignOffValue,
     openDealsCount: proposalDeals.length + corporateDeals.length,
+    pipelineDeals,
     stages: [
       {
         label: 'Proposal',

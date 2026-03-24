@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 type Deal = {
@@ -282,6 +283,12 @@ export default function HomePage() {
           <div className="text-[2.2rem] font-bold leading-none tracking-tight text-[var(--brand-orange)] sm:text-[3rem]">brinc</div>
 
           <div className="flex w-full items-center justify-end gap-3 sm:w-auto sm:justify-normal sm:gap-10">
+            <Link
+              href="/deals"
+              className="rounded-full border border-[var(--brand-line)] bg-white px-4 py-2 text-sm font-bold text-[var(--brand-ink)] transition hover:border-[var(--brand-orange)] hover:text-[var(--brand-orange)]"
+            >
+              Deal tables
+            </Link>
             <div className="flex flex-1 items-center justify-between gap-3 rounded-full border border-[var(--brand-line)] bg-[#e0e0e0] px-4 py-2 text-[var(--brand-muted)] sm:w-[250px] sm:flex-none sm:px-5 sm:py-2.5">
               <span className="text-sm sm:text-base">Search...</span>
               <span className="text-lg">⌕</span>
