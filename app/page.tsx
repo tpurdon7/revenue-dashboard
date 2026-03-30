@@ -17,6 +17,10 @@ type RevenueResponse = {
   deals: Deal[];
   startDateUsed: string;
   endDateUsed: string;
+  closedRevenueStartDateUsed: string;
+  closedRevenueEndDateUsed: string;
+  openDealsStartDateUsed: string;
+  openDealsEndDateUsed: string;
   openDealValue: number;
   openDealsCount: number;
   openProgress: number;
@@ -327,7 +331,7 @@ export default function HomePage() {
                 <p className="mt-2 text-4xl font-bold tracking-tight text-[var(--brand-ink)] sm:mt-3 sm:text-7xl">
                   {loading && !data ? 'Loading...' : `${formatCompactMillions(data?.totalRevenue ?? 0)} Closed`}
                 </p>
-                <p className="mt-2 text-sm text-[var(--brand-muted)] sm:mt-3">Last 180 Days to Today</p>
+                <p className="mt-2 text-sm text-[var(--brand-muted)] sm:mt-3">September 15, 2025 to Today</p>
               </div>
 
               <button
@@ -439,7 +443,8 @@ export default function HomePage() {
 
               {data ? (
                 <p className="mt-1 text-xs text-[var(--brand-muted)] sm:text-sm">
-                  {data.dealsCount} deals closed | Date window used: {formatDate(data.startDateUsed)} to {formatDate(data.endDateUsed)}
+                  {data.dealsCount} deals closed | Date window used: {formatDate(data.closedRevenueStartDateUsed)} to{' '}
+                  {formatDate(data.closedRevenueEndDateUsed)}
                 </p>
               ) : null}
             </div>

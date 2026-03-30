@@ -39,6 +39,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       ...closedWonData,
       ...openDealsData,
+      closedRevenueStartDateUsed: closedWonData.startDateUsed,
+      closedRevenueEndDateUsed: closedWonData.endDateUsed,
+      openDealsStartDateUsed: openDealsData.startDateUsed,
+      openDealsEndDateUsed: openDealsData.endDateUsed,
+      startDateUsed: closedWonData.startDateUsed,
+      endDateUsed: closedWonData.endDateUsed,
       goal,
       progress,
       openProgress

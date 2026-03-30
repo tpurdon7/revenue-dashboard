@@ -4,6 +4,7 @@ const HUBSPOT_SEARCH_URL = 'https://api.hubapi.com/crm/v3/objects/deals/search';
 const HUBSPOT_OWNERS_URL = 'https://api.hubapi.com/crm/v3/owners';
 const HUBSPOT_DEAL_PIPELINES_URL = 'https://api.hubapi.com/crm/v3/pipelines/deals';
 const ROLLING_WINDOW_DAYS = 180;
+const CLOSED_REVENUE_LOCKED_START_DATE = '2025-09-15T00:00:00.000Z';
 const REQUIRED_PROPERTIES = [
   'amount',
   'closedate',
@@ -204,14 +205,14 @@ function pickProperty(
   return null;
 }
 
-function getStartAndEndTimestamps(startDate?: string, endDate?: string) {
+function getStartAndEndTimestamps(startDate?: string, endDate?: string, defaultStartMs?: number) {
   const endMs = endDate ? new Date(endDate).getTime() : Date.now();
   if (Number.isNaN(endMs)) {
     throw new Error(`Invalid endDate: ${endDate}`);
   }
   const startMs = startDate
     ? new Date(startDate).getTime()
-    : endMs - ROLLING_WINDOW_DAYS * 24 * 60 * 60 * 1000;
+    : (defaultStartMs ?? endMs - ROLLING_WINDOW_DAYS * 24 * 60 * 60 * 1000);
   if (Number.isNaN(startMs)) {
     throw new Error(`Invalid startDate: ${startDate}`);
   }
@@ -225,6 +226,10 @@ function getStartAndEndTimestamps(startDate?: string, endDate?: string) {
     startDateUsed: toIsoFromMs(startMs),
     endDateUsed: toIsoFromMs(endMs)
   };
+}
+
+function getClosedWonStartAndEndTimestamps(startDate?: string, endDate?: string) {
+  return getStartAndEndTimestamps(startDate, endDate, new Date(CLOSED_REVENUE_LOCKED_START_DATE).getTime());
 }
 
 function sortDealsByCloseDateDesc(deals: Deal[]): Deal[] {
@@ -434,7 +439,7 @@ export async function fetchClosedWonRevenue({
     throw new Error('Missing HUBSPOT_PRIVATE_APP_TOKEN environment variable');
   }
 
-  const { startMs, endMs, startDateUsed, endDateUsed } = getStartAndEndTimestamps(startDate, endDate);
+  const { startMs, endMs, startDateUsed, endDateUsed } = getClosedWonStartAndEndTimestamps(startDate, endDate);
 
   let after: string | undefined;
   const deals: Deal[] = [];

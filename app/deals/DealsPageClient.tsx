@@ -31,6 +31,10 @@ type RevenueResponse = {
   pipelineDeals: PipelineDeal[];
   startDateUsed: string;
   endDateUsed: string;
+  closedRevenueStartDateUsed: string;
+  closedRevenueEndDateUsed: string;
+  openDealsStartDateUsed: string;
+  openDealsEndDateUsed: string;
 };
 
 function formatCurrency(amount: number): string {
@@ -169,14 +173,14 @@ export default function DealsPageClient() {
       return 'closed-won-deals.csv';
     }
 
-    return `closed-won-deals-${formatDateForFilename(data.startDateUsed)}-to-${formatDateForFilename(data.endDateUsed)}.csv`;
+    return `closed-won-deals-${formatDateForFilename(data.closedRevenueStartDateUsed)}-to-${formatDateForFilename(data.closedRevenueEndDateUsed)}.csv`;
   }, [data]);
   const pipelineCsvFilename = useMemo(() => {
     if (!data) {
       return 'pipeline-deals.csv';
     }
 
-    return `pipeline-deals-${formatDateForFilename(data.startDateUsed)}-to-${formatDateForFilename(data.endDateUsed)}.csv`;
+    return `pipeline-deals-${formatDateForFilename(data.openDealsStartDateUsed)}-to-${formatDateForFilename(data.openDealsEndDateUsed)}.csv`;
   }, [data]);
 
   const loadDeals = useCallback(async () => {
@@ -269,9 +273,17 @@ export default function DealsPageClient() {
         <section className="mt-6 rounded-3xl border border-[var(--brand-line)] bg-white p-5 shadow-[0_16px_40px_rgba(15,17,21,0.06)] sm:p-6">
           <div className="flex flex-wrap gap-6 text-sm text-[var(--brand-muted)]">
             <p>
-              Date window:{' '}
+              Closed won window:{' '}
               <span className="font-semibold text-[var(--brand-ink)]">
-                {data ? `${formatDate(data.startDateUsed)} to ${formatDate(data.endDateUsed)}` : 'Loading...'}
+                {data
+                  ? `${formatDate(data.closedRevenueStartDateUsed)} to ${formatDate(data.closedRevenueEndDateUsed)}`
+                  : 'Loading...'}
+              </span>
+            </p>
+            <p>
+              Pipeline window:{' '}
+              <span className="font-semibold text-[var(--brand-ink)]">
+                {data ? `${formatDate(data.openDealsStartDateUsed)} to ${formatDate(data.openDealsEndDateUsed)}` : 'Loading...'}
               </span>
             </p>
             <p>
