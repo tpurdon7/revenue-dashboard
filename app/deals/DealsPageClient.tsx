@@ -262,12 +262,20 @@ export default function DealsPageClient() {
             </p>
           </div>
 
-          <Link
-            href="/"
-            className="rounded-full border border-[var(--brand-line)] bg-white px-4 py-2 text-sm font-bold text-[var(--brand-ink)] transition hover:border-[var(--brand-orange)] hover:text-[var(--brand-orange)]"
-          >
-            Back to dashboard
-          </Link>
+          <div className="flex flex-wrap gap-3">
+            <Link
+              href="/"
+              className="rounded-full border border-[var(--brand-line)] bg-white px-4 py-2 text-sm font-bold text-[var(--brand-ink)] transition hover:border-[var(--brand-orange)] hover:text-[var(--brand-orange)]"
+            >
+              Back to dashboard
+            </Link>
+            <Link
+              href="/report"
+              className="rounded-full border border-[var(--brand-line)] bg-white px-4 py-2 text-sm font-bold text-[var(--brand-ink)] transition hover:border-[var(--brand-orange)] hover:text-[var(--brand-orange)]"
+            >
+              Product suite
+            </Link>
+          </div>
         </header>
 
         <section className="mt-6 rounded-3xl border border-[var(--brand-line)] bg-white p-5 shadow-[0_16px_40px_rgba(15,17,21,0.06)] sm:p-6">

@@ -293,6 +293,12 @@ export default function HomePage() {
             >
               Deal tables
             </Link>
+            <Link
+              href="/report"
+              className="rounded-full border border-[var(--brand-line)] bg-white px-4 py-2 text-sm font-bold text-[var(--brand-ink)] transition hover:border-[var(--brand-orange)] hover:text-[var(--brand-orange)]"
+            >
+              Product suite
+            </Link>
             <div className="flex flex-1 items-center justify-between gap-3 rounded-full border border-[var(--brand-line)] bg-[#e0e0e0] px-4 py-2 text-[var(--brand-muted)] sm:w-[250px] sm:flex-none sm:px-5 sm:py-2.5">
               <span className="text-sm sm:text-base">Search...</span>
               <span className="text-lg">⌕</span>

@@ -4,6 +4,7 @@ import { fetchClosedWonRevenue, fetchOpenDealsCurrentValue } from '@/lib/hubspot
 export const runtime = 'nodejs';
 
 const DEFAULT_GOAL = 10_000_000;
+const MANUAL_CLOSED_REVENUE_ADJUSTMENT = 200_000;
 
 function parseGoal(input: string | undefined): number {
   const parsed = Number.parseFloat(input ?? '');
@@ -32,12 +33,14 @@ export async function GET(request: NextRequest) {
       fetchClosedWonRevenue({ startDate, endDate }),
       fetchOpenDealsCurrentValue({ startDate, endDate })
     ]);
+    const adjustedClosedWonRevenue = closedWonData.totalRevenue + MANUAL_CLOSED_REVENUE_ADJUSTMENT;
     const goal = parseGoal(process.env.REVENUE_GOAL);
-    const progress = clampProgress(closedWonData.totalRevenue / goal);
+    const progress = clampProgress(adjustedClosedWonRevenue / goal);
     const openProgress = clampProgress(openDealsData.openDealValue / goal);
 
     return NextResponse.json({
       ...closedWonData,
+      totalRevenue: adjustedClosedWonRevenue,
       ...openDealsData,
       closedRevenueStartDateUsed: closedWonData.startDateUsed,
       closedRevenueEndDateUsed: closedWonData.endDateUsed,
