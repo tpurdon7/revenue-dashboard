@@ -3,6 +3,8 @@ import 'server-only';
 const HUBSPOT_SEARCH_URL = 'https://api.hubapi.com/crm/v3/objects/deals/search';
 const HUBSPOT_OWNERS_URL = 'https://api.hubapi.com/crm/v3/owners';
 const HUBSPOT_DEAL_PIPELINES_URL = 'https://api.hubapi.com/crm/v3/pipelines/deals';
+const HUBSPOT_DEAL_COMPANY_ASSOCIATIONS_URL = 'https://api.hubapi.com/crm/v4/associations/deal/company/batch/read';
+const HUBSPOT_COMPANIES_BATCH_READ_URL = 'https://api.hubapi.com/crm/v3/objects/companies/batch/read';
 const ROLLING_WINDOW_DAYS = 180;
 const CLOSED_REVENUE_LOCKED_START_DATE = '2025-09-15T00:00:00.000Z';
 const REQUIRED_PROPERTIES = [
@@ -80,6 +82,34 @@ type HubSpotDealPipelinesResponse = {
   results: HubSpotDealPipeline[];
 };
 
+type HubSpotAssociationResponse = {
+  results: Array<{
+    from: {
+      id: string;
+    };
+    to?: Array<{
+      toObjectId: number;
+    }>;
+  }>;
+};
+
+type HubSpotCompany = {
+  id: string;
+  properties: Partial<Record<string, string | null>>;
+};
+
+type HubSpotCompaniesBatchResponse = {
+  results: HubSpotCompany[];
+};
+
+export type DealCompany = {
+  id: string;
+  name: string;
+  domain: string;
+  description: string;
+  industry: string;
+};
+
 export type Deal = {
   id: string;
   dealname: string;
@@ -90,6 +120,7 @@ export type Deal = {
   lastUpdatedDate: string | null;
   hubspot_owner_id: string;
   ownerName: string;
+  company: DealCompany | null;
 };
 
 export type FetchClosedWonRevenueInput = {
@@ -187,7 +218,8 @@ function mapDeal(deal: HubSpotDeal): Deal {
     region: pickProperty(deal.properties, ['region', 'hs_country_region']) ?? '',
     lastUpdatedDate: deal.properties.hs_lastmodifieddate ?? null,
     hubspot_owner_id: deal.properties.hubspot_owner_id ?? '',
-    ownerName: 'Unassigned'
+    ownerName: 'Unassigned',
+    company: null
   };
 }
 
@@ -337,6 +369,73 @@ async function fetchDealPipelines(token: string): Promise<HubSpotDealPipeline[]>
   return payload.results ?? [];
 }
 
+async function fetchPrimaryCompaniesByDealId(token: string, dealIds: string[]): Promise<Map<string, DealCompany>> {
+  if (dealIds.length === 0) {
+    return new Map();
+  }
+
+  const associationsPayload = await fetchHubSpotJson<HubSpotAssociationResponse>(HUBSPOT_DEAL_COMPANY_ASSOCIATIONS_URL, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      inputs: dealIds.map((id) => ({ id }))
+    }),
+    cache: 'no-store'
+  });
+
+  const companyIdByDealId = new Map<string, string>();
+  associationsPayload.results.forEach((result) => {
+    const companyId = result.to?.[0]?.toObjectId;
+    if (companyId) {
+      companyIdByDealId.set(result.from.id, String(companyId));
+    }
+  });
+
+  const companyIds = Array.from(new Set(companyIdByDealId.values()));
+  if (companyIds.length === 0) {
+    return new Map();
+  }
+
+  const companiesPayload = await fetchHubSpotJson<HubSpotCompaniesBatchResponse>(HUBSPOT_COMPANIES_BATCH_READ_URL, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      properties: ['name', 'domain', 'description', 'industry'],
+      inputs: companyIds.map((id) => ({ id }))
+    }),
+    cache: 'no-store'
+  });
+
+  const companyById = new Map(
+    companiesPayload.results.map((company) => [
+      company.id,
+      {
+        id: company.id,
+        name: pickProperty(company.properties, ['name']) ?? 'Unknown company',
+        domain: pickProperty(company.properties, ['domain']) ?? '',
+        description: pickProperty(company.properties, ['description']) ?? '',
+        industry: pickProperty(company.properties, ['industry']) ?? ''
+      }
+    ])
+  );
+
+  const companyByDealId = new Map<string, DealCompany>();
+  companyIdByDealId.forEach((companyId, dealId) => {
+    const company = companyById.get(companyId);
+    if (company) {
+      companyByDealId.set(dealId, company);
+    }
+  });
+
+  return companyByDealId;
+}
+
 function getStageIdsByLabel(
   pipelines: HubSpotDealPipeline[],
   label: string,
@@ -465,6 +564,11 @@ export async function fetchClosedWonRevenue({
                 propertyName: 'closedate',
                 operator: 'GTE',
                 value: String(startMs)
+              },
+              {
+                propertyName: 'closedate',
+                operator: 'LTE',
+                value: String(endMs)
               }
             ]
           },
@@ -479,6 +583,11 @@ export async function fetchClosedWonRevenue({
                 propertyName: 'closedate',
                 operator: 'GTE',
                 value: String(startMs)
+              },
+              {
+                propertyName: 'closedate',
+                operator: 'LTE',
+                value: String(endMs)
               }
             ]
           }
@@ -509,8 +618,22 @@ export async function fetchClosedWonRevenue({
     ...deal,
     ownerName: ownerNamesById.get(deal.hubspot_owner_id) ?? 'Unassigned'
   }));
-  const totalRevenue = sortedDeals.reduce((sum, deal) => sum + deal.amount, 0);
-  const closedateMs = sortedDeals
+  let companiesByDealId = new Map<string, DealCompany>();
+  try {
+    companiesByDealId = await fetchPrimaryCompaniesByDealId(
+      token,
+      sortedDeals.map((deal) => deal.id)
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown company association error';
+    console.warn('[hubspot] could not fetch associated companies for closed won deals', { message });
+  }
+  const dealsWithCompanies = sortedDeals.map((deal) => ({
+    ...deal,
+    company: companiesByDealId.get(deal.id) ?? null
+  }));
+  const totalRevenue = dealsWithCompanies.reduce((sum, deal) => sum + deal.amount, 0);
+  const closedateMs = dealsWithCompanies
     .map((deal) => (deal.closedate ? new Date(deal.closedate).getTime() : Number.NaN))
     .filter((value) => Number.isFinite(value));
   const earliestClosedate =
@@ -519,7 +642,7 @@ export async function fetchClosedWonRevenue({
     closedateMs.length > 0 ? new Date(Math.max(...closedateMs)).toISOString() : null;
 
   console.info('[hubspot] closed won summary', {
-    totalDealsFetched: sortedDeals.length,
+    totalDealsFetched: dealsWithCompanies.length,
     excludedDealsCount,
     totalRevenue,
     earliestClosedate,
@@ -530,8 +653,8 @@ export async function fetchClosedWonRevenue({
 
   return {
     totalRevenue,
-    dealsCount: sortedDeals.length,
-    deals: sortedDeals,
+    dealsCount: dealsWithCompanies.length,
+    deals: dealsWithCompanies,
     startDateUsed,
     endDateUsed
   };
