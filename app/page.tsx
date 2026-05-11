@@ -312,7 +312,7 @@ export default function HomePage() {
           </h1>
 
           <p className="mx-auto mt-6 max-w-4xl text-lg font-light leading-snug text-[var(--brand-muted)] sm:mt-8 sm:text-[2rem]">
-            Deals closed for this year- let's get it
+            Deals closed from December 31 onwards- let's get it
           </p>
         </section>
 
@@ -337,7 +337,7 @@ export default function HomePage() {
                 <p className="mt-2 text-4xl font-bold tracking-tight text-[var(--brand-ink)] sm:mt-3 sm:text-7xl">
                   {loading && !data ? 'Loading...' : `${formatCompactMillions(data?.totalRevenue ?? 0)} Closed`}
                 </p>
-                <p className="mt-2 text-sm text-[var(--brand-muted)] sm:mt-3">September 15, 2025 to Today</p>
+                <p className="mt-2 text-sm text-[var(--brand-muted)] sm:mt-3">December 31, 2025 to Today</p>
               </div>
 
               <button

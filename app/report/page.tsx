@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 type DealCompany = {
   id: string;
@@ -501,8 +501,6 @@ export default function ReportPage() {
   const [data, setData] = useState<RevenueResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const year = new Date().getFullYear();
-  const yearStart = useMemo(() => `${year}-01-01`, [year]);
   const closedWonDeals = data?.deals ?? [];
 
   const loadClosedWonDeals = useCallback(async () => {
@@ -510,7 +508,7 @@ export default function ReportPage() {
     setError(null);
 
     try {
-      const response = await fetch(`/api/revenue?startDate=${yearStart}`, {
+      const response = await fetch('/api/revenue', {
         cache: 'no-store'
       });
 
@@ -527,7 +525,7 @@ export default function ReportPage() {
     } finally {
       setLoading(false);
     }
-  }, [yearStart]);
+  }, []);
 
   useEffect(() => {
     void loadClosedWonDeals();
@@ -646,11 +644,11 @@ export default function ReportPage() {
         <section className="mt-8">
           <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
             <div>
-              <p className="text-sm font-bold uppercase tracking-[0.16em] text-[var(--brand-orange)]">Closed Won This Year</p>
+              <p className="text-sm font-bold uppercase tracking-[0.16em] text-[var(--brand-orange)]">Closed Won Since Dec 31</p>
               <h2 className="mt-2 text-3xl font-bold text-[var(--brand-ink)] sm:text-4xl">Deals and Company Logos</h2>
             </div>
             <p className="max-w-3xl text-sm leading-7 text-[var(--brand-muted)] sm:text-base">
-              Pulled from HubSpot closed-won deals from Jan 1, {year} to today. Logos appear only when HubSpot has an
+              Pulled from HubSpot closed-won deals from Dec 31, 2025 to today. Logos appear only when HubSpot has an
               associated company domain; otherwise the card uses company initials.
             </p>
           </div>
@@ -675,7 +673,7 @@ export default function ReportPage() {
                   <span className="font-bold text-[var(--brand-ink)]">
                     {data
                       ? `${formatDate(data.closedRevenueStartDateUsed)} to ${formatDate(data.closedRevenueEndDateUsed)}`
-                      : `Jan 1, ${year} to today`}
+                      : 'Dec 31, 2025 to today'}
                   </span>
                 </p>
               </div>
@@ -692,7 +690,7 @@ export default function ReportPage() {
                 ))}
               </div>
             ) : (
-              <p className="mt-5 text-sm text-[var(--brand-muted)]">No closed-won deals found for this year.</p>
+              <p className="mt-5 text-sm text-[var(--brand-muted)]">No closed-won deals found for this time window.</p>
             )}
           </div>
         </section>

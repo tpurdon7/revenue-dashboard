@@ -75,23 +75,23 @@ function formatDateForFilename(isoDate: string | null): string {
   return date.toISOString().slice(0, 10);
 }
 
-function getJanFirstReference(endDateUsed: string): Date | null {
-  const endDate = new Date(endDateUsed);
-  if (Number.isNaN(endDate.getTime())) {
+function getDateReference(isoDate: string): Date | null {
+  const referenceDate = new Date(isoDate);
+  if (Number.isNaN(referenceDate.getTime())) {
     return null;
   }
 
-  return new Date(Date.UTC(endDate.getUTCFullYear(), 0, 1));
+  return referenceDate;
 }
 
-function getCloseDatePositionLabel(closedate: string | null, endDateUsed: string): string {
+function getCloseDatePositionLabel(closedate: string | null, startDateUsed: string): string {
   if (!closedate) {
     return '-';
   }
 
   const closeDate = new Date(closedate);
-  const janFirst = getJanFirstReference(endDateUsed);
-  if (Number.isNaN(closeDate.getTime()) || !janFirst) {
+  const startDate = getDateReference(startDateUsed);
+  if (Number.isNaN(closeDate.getTime()) || !startDate) {
     return '-';
   }
 
@@ -100,9 +100,9 @@ function getCloseDatePositionLabel(closedate: string | null, endDateUsed: string
     day: 'numeric',
     year: 'numeric',
     timeZone: 'UTC'
-  }).format(janFirst);
+  }).format(startDate);
 
-  return closeDate.getTime() < janFirst.getTime() ? `Before ${referenceLabel}` : `On or after ${referenceLabel}`;
+  return closeDate.getTime() < startDate.getTime() ? `Before ${referenceLabel}` : `On or after ${referenceLabel}`;
 }
 
 function buildRevenueUrl(searchParams: URLSearchParams): string {
@@ -218,14 +218,14 @@ export default function DealsPageClient() {
 
     downloadCsv(
       closedWonCsvFilename,
-      ['Deal Name', 'Region', 'Country', 'Contract Value', 'Deal Owner', 'Close Date Before or After January 1st'],
+      ['Deal Name', 'Region', 'Country', 'Contract Value', 'Deal Owner', 'Close Date vs Tracker Start'],
       data.deals.map((deal) => [
         deal.dealname || 'Untitled Deal',
         deal.region || '',
         deal.country || '',
         deal.amount,
         deal.ownerName || 'Unassigned',
-        getCloseDatePositionLabel(deal.closedate, data.endDateUsed)
+        getCloseDatePositionLabel(deal.closedate, data.closedRevenueStartDateUsed)
       ])
     );
   }, [closedWonCsvFilename, data]);
@@ -332,7 +332,7 @@ export default function DealsPageClient() {
                   <th className="px-2 py-3 font-bold">Country</th>
                   <th className="px-2 py-3 text-right font-bold">Contract Value</th>
                   <th className="px-2 py-3 font-bold">Deal Owner</th>
-                  <th className="px-2 py-3 font-bold">Close Date vs Jan 1</th>
+                  <th className="px-2 py-3 font-bold">Close Date vs Tracker Start</th>
                 </tr>
               </thead>
               <tbody>
@@ -350,7 +350,7 @@ export default function DealsPageClient() {
                       <td className="px-2 py-3.5 text-[var(--brand-muted)]">{deal.country || '-'}</td>
                       <td className="px-2 py-3.5 text-right font-medium text-[var(--brand-ink)]">{formatCurrency(deal.amount)}</td>
                       <td className="px-2 py-3.5 text-[var(--brand-muted)]">{deal.ownerName || 'Unassigned'}</td>
-                      <td className="px-2 py-3.5 text-[var(--brand-muted)]">{getCloseDatePositionLabel(deal.closedate, data.endDateUsed)}</td>
+                      <td className="px-2 py-3.5 text-[var(--brand-muted)]">{getCloseDatePositionLabel(deal.closedate, data.closedRevenueStartDateUsed)}</td>
                     </tr>
                   ))
                 ) : (

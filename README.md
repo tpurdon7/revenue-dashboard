@@ -51,7 +51,7 @@ Open `http://localhost:3000`.
 
 Optional query params:
 
-- `startDate` in `YYYY-MM-DD` format (default: `endDate - 180 days`)
+- `startDate` in `YYYY-MM-DD` format (closed revenue is floored at `2025-12-31`; open pipeline defaults to `endDate - 180 days`)
 - `endDate` ISO date string (default: runtime `now`)
 
 HubSpot filter logic:
@@ -63,7 +63,8 @@ Pagination uses HubSpot `after` cursor until all results are fetched.
 
 ## Time window used by default
 
-- Start: now minus 180 days
+- Closed revenue start: December 31, 2025
+- Open pipeline start: now minus 180 days
 - End: runtime now
 
-Dashboard label shows `Last 180 Days to Today` for clean display.
+Dashboard closed revenue label shows `December 31, 2025 to Today` for clean display.
