@@ -7,6 +7,7 @@ const HUBSPOT_DEAL_COMPANY_ASSOCIATIONS_URL = 'https://api.hubapi.com/crm/v4/ass
 const HUBSPOT_COMPANIES_BATCH_READ_URL = 'https://api.hubapi.com/crm/v3/objects/companies/batch/read';
 const ROLLING_WINDOW_DAYS = 180;
 const CLOSED_REVENUE_LOCKED_START_DATE = '2025-12-31T00:00:00.000Z';
+const CLOSED_WON_DEFAULT_END_DATE = '2026-03-20T23:59:59.999Z';
 const REQUIRED_PROPERTIES = [
   'amount',
   'closedate',
@@ -262,7 +263,7 @@ function getStartAndEndTimestamps(startDate?: string, endDate?: string, defaultS
 
 function getClosedWonStartAndEndTimestamps(startDate?: string, endDate?: string) {
   const lockedStartMs = new Date(CLOSED_REVENUE_LOCKED_START_DATE).getTime();
-  const timestamps = getStartAndEndTimestamps(startDate, endDate, lockedStartMs);
+  const timestamps = getStartAndEndTimestamps(startDate, endDate ?? CLOSED_WON_DEFAULT_END_DATE, lockedStartMs);
   const startMs = Math.max(timestamps.startMs, lockedStartMs);
   if (startMs > timestamps.endMs) {
     throw new Error('endDate must be on or after December 31, 2025');
