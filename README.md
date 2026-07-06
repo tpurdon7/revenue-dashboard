@@ -51,8 +51,8 @@ Open `http://localhost:3000`.
 
 Optional query params:
 
-- `startDate` in `YYYY-MM-DD` format (closed revenue is floored at `2025-12-31`; open pipeline defaults to `endDate - 180 days`)
-- `endDate` ISO date string (default: closed won uses `2026-03-20`, open pipeline uses runtime `now`)
+- `startDate` in `YYYY-MM-DD` format (closed revenue is floored at `2026-03-20`; open pipeline defaults to `endDate - 180 days`)
+- `endDate` ISO date string (default: runtime `now`)
 
 HubSpot filter logic:
 
@@ -63,9 +63,8 @@ Pagination uses HubSpot `after` cursor until all results are fetched.
 
 ## Time window used by default
 
-- Closed revenue start: December 31, 2025
-- Closed revenue end: March 20, 2026
+- Closed revenue start: March 20, 2026
 - Open pipeline start: now minus 180 days
 - Open pipeline end: runtime now
 
-Dashboard closed revenue label shows `December 31, 2025 to March 20, 2026` by default.
+Dashboard closed revenue label shows `March 20, 2026 onwards` by default.

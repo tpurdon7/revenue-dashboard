@@ -337,7 +337,7 @@ export default function HomePage() {
                 <p className="mt-2 text-4xl font-bold tracking-tight text-[var(--brand-ink)] sm:mt-3 sm:text-7xl">
                   {loading && !data ? 'Loading...' : `${formatCompactMillions(data?.totalRevenue ?? 0)} Closed`}
                 </p>
-                <p className="mt-2 text-sm text-[var(--brand-muted)] sm:mt-3">December 31, 2025 to March 20, 2026</p>
+                <p className="mt-2 text-sm text-[var(--brand-muted)] sm:mt-3">March 20, 2026 onwards</p>
               </div>
 
               <button

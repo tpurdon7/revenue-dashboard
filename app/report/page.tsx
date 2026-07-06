@@ -644,11 +644,11 @@ export default function ReportPage() {
         <section className="mt-8">
           <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
             <div>
-              <p className="text-sm font-bold uppercase tracking-[0.16em] text-[var(--brand-orange)]">Closed Won Through Mar 20</p>
+              <p className="text-sm font-bold uppercase tracking-[0.16em] text-[var(--brand-orange)]">Closed Won Since Mar 20</p>
               <h2 className="mt-2 text-3xl font-bold text-[var(--brand-ink)] sm:text-4xl">Deals and Company Logos</h2>
             </div>
             <p className="max-w-3xl text-sm leading-7 text-[var(--brand-muted)] sm:text-base">
-              Pulled from HubSpot closed-won deals from Dec 31, 2025 through Mar 20, 2026. Logos appear only when
+              Pulled from HubSpot closed-won deals from March 20, 2026 to today. Logos appear only when
               HubSpot has an associated company domain; otherwise the card uses company initials.
             </p>
           </div>
@@ -673,7 +673,7 @@ export default function ReportPage() {
                   <span className="font-bold text-[var(--brand-ink)]">
                     {data
                       ? `${formatDate(data.closedRevenueStartDateUsed)} to ${formatDate(data.closedRevenueEndDateUsed)}`
-                      : 'Dec 31, 2025 to Mar 20, 2026'}
+                      : 'Mar 20, 2026 to today'}
                   </span>
                 </p>
               </div>
