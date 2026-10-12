@@ -312,7 +312,7 @@ export default function HomePage() {
           </h1>
 
           <p className="mx-auto mt-6 max-w-4xl text-lg font-light leading-snug text-[var(--brand-muted)] sm:mt-8 sm:text-[2rem]">
-            Deals closed from December 31 onwards- let's get it
+            Deals closed from March 30th onwards- let's get it
           </p>
         </section>
 
